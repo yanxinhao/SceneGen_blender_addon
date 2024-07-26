@@ -1,5 +1,8 @@
 import bpy
 import numpy as np
+import math
+
+degrees2radians = lambda rotation_degrees: tuple(math.radians(angle) for angle in rotation_degrees)
 
 class Layout(object):
     def __init__(self,json_str: str) -> None:
@@ -20,12 +23,17 @@ class Layout(object):
             translation[1]+=bbox[1]/2.0
             angles=np.array(obj["angles"])
 
-            bpy.ops.mesh.primitive_cube_add(size=1,location=translation,scale=bbox,rotation=[0,angles,0])
+            bpy.ops.mesh.primitive_cube_add(size=1,location=translation,scale=bbox,rotation=degrees2radians([0,angles,0]))
             cube = bpy.context.selected_objects[0]
             # change name
             cube.name = obj_name
             # change description 
             cube["description"] = prompt
+        # add plane
+        bpy.ops.mesh.primitive_plane_add(size=1,location=[0,0,0],rotation=degrees2radians((90.0,0,0)))
+        plane = bpy.context.selected_objects[0]
+        plane.name = "plane"
+        plane.dimensions = [50,50,0]
 
     @classmethod
     def export(cls) -> dict:
