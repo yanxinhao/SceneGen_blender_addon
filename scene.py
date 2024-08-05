@@ -14,7 +14,7 @@ class Layout(object):
         self.objects:dict=eval(json_str)
 
 
-    def init_bbox(self):
+    def init_bbox(self,y_vertical=True):
         for (obj_name,obj) in self.objects.items():
             
             prompt=obj["description"]
@@ -22,29 +22,44 @@ class Layout(object):
             translation=np.array(obj["translations"]).astype(np.float32)
             translation[1]+=bbox[1]/2.0
             angles=np.array(obj["angles"])
+            if y_vertical:
+            # change to z vertical
+                rotations=degrees2radians([0,0,angles])
+                translation=[translation[0],-translation[2],translation[1]]
+                bbox=[bbox[0],bbox[2],bbox[1]]
+            else:
+                rotations=degrees2radians([0,angles,0])
 
-            bpy.ops.mesh.primitive_cube_add(size=1,location=translation,scale=bbox,rotation=degrees2radians([0,angles,0]))
+            bpy.ops.mesh.primitive_cube_add(size=1,location=translation,scale=bbox,rotation=rotations)
             cube = bpy.context.selected_objects[0]
             # change name
             cube.name = obj_name
             # change description 
             cube["description"] = prompt
         # add plane
-        bpy.ops.mesh.primitive_plane_add(size=1,location=[0,0,0],rotation=degrees2radians((90.0,0,0)))
+        bpy.ops.mesh.primitive_plane_add(size=1,location=[0,0,0])
         plane = bpy.context.selected_objects[0]
         plane.name = "plane"
         plane.dimensions = [50,50,0]
 
     @classmethod
-    def export(cls) -> dict:
+    def export(cls,y_vertical=True ) -> dict:
         objects={}
         for b_obj in bpy.data.objects:
             obj_name=b_obj.name
             f_obj={}
             f_obj["description"]=b_obj.description
-            f_obj["sizes"]=list(b_obj.dimensions)
-            f_obj["translations"]=list(b_obj.location)
-            f_obj["translations"][1]-=b_obj.dimensions[1]/2.0
-            f_obj["angles"]=b_obj.rotation_euler.y
+            if y_vertical:
+                sizes=[b_obj.dimensions[0],b_obj.dimensions[2],b_obj.dimensions[1]]
+                translations=[b_obj.location[0],b_obj.location[2],-b_obj.location[1]]
+                translations[1]-=sizes[1]/2.0
+            else:
+                sizes=list(b_obj.dimensions)
+                translations=list(b_obj.location)
+                translations[2]-=b_obj.dimensions[2]/2.0
+            angles=math.degrees(b_obj.rotation_euler.z)
+            f_obj["sizes"]=sizes
+            f_obj["translations"]=translations
+            f_obj["angles"]=angles
             objects[obj_name]=f_obj
         return objects
