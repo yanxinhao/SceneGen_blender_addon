@@ -3,7 +3,6 @@ import numpy as np
 import math
 
 degrees2radians = lambda rotation_degrees: tuple(math.radians(angle) for angle in rotation_degrees)
-
 class Layout(object):
     def __init__(self,json_str: str) -> None:
         """scene layout
@@ -15,6 +14,12 @@ class Layout(object):
 
 
     def init_bbox(self,y_vertical=True):
+        # front face color
+        if "RedMaterial" in list(bpy.data.materials.keys()):
+            red_material = bpy.data.materials["RedMaterial"]
+        else:
+            red_material = bpy.data.materials.new(name="RedMaterial")
+            red_material.diffuse_color = (1, 0, 0, 1)  # 设置为红色 (RGBA)
         for (obj_name,obj) in self.objects.items():
             
             prompt=obj["description"]
@@ -32,6 +37,13 @@ class Layout(object):
 
             bpy.ops.mesh.primitive_cube_add(size=1,location=translation,scale=bbox,rotation=rotations)
             cube = bpy.context.selected_objects[0]
+
+            # set the frontal face in red
+            if not cube.data.materials:
+                cube.data.materials.append(bpy.data.materials["Material"])
+            cube.data.materials.append(red_material)
+            cube.data.polygons[3].material_index=1
+
             # change name
             cube.name = obj_name
             # change description 
