@@ -63,40 +63,14 @@ class Layout(object):
             red_material = bpy.data.materials.new(name="RedMaterial")
             red_material.diffuse_color = (1, 0, 0, 1)  # 设置为红色 (RGBA)
         for obj_name, obj in self.objects.items():
-
-            prompt = obj["description"]
-            bbox = np.array(obj["sizes"]).astype(np.float32)
-            translation = np.array(obj["translations"]).astype(np.float32)
-            translation[1] += bbox[1] / 2.0
-            angles = np.array(obj["angles"])
-            if y_vertical:
-                # change to z vertical
-                rotations = degrees2radians([0, 0, angles])
-                translation = [translation[0], -translation[2], translation[1]]
-                bbox = [bbox[0], bbox[2], bbox[1]]
-            else:
-                rotations = degrees2radians([0, angles, 0])
-
-            bpy.ops.mesh.primitive_cube_add(
-                size=1, location=translation, scale=bbox, rotation=rotations
-            )
-            cube = bpy.context.selected_objects[0]
-
-            # set the frontal face in red
-            if not cube.data.materials:
-                cube.data.materials.append(bpy.data.materials["Material"])
-            cube.data.materials.append(red_material)
-            cube.data.polygons[3].material_index = 1
-
-            # change name
-            cube.name = obj_name
-            # change description
-            cube["description"] = prompt
+            self.__class__.add_object({obj_name: obj}, y_vertical)
         # add plane
         bpy.ops.mesh.primitive_plane_add(size=1, location=[0, 0, 0])
         plane = bpy.context.selected_objects[0]
         plane.name = "plane"
         plane.dimensions = [50, 50, 0]
+        # move plane to generated objects collection
+        bpy.data.collections["generated_objects"].objects.link(plane)
 
     @classmethod
     def export(cls, y_vertical=True) -> dict:

@@ -22,7 +22,7 @@ from .operators import (
 bl_info = {
     "name": "Scenegen",
     "author": "yanxinhao",
-    "description": "",
+    "description": "Ouput two collections: generated_objects and layout_bboxes",
     "blender": (2, 80, 0),
     "version": (0, 0, 1),
     "location": "",

@@ -4,6 +4,7 @@ import bpy
 from bpy_extras.io_utils import ImportHelper
 from .scene import Layout
 from .llm_utils import ask_newobject, ask_nextobject
+from .utils import create_collection
 
 
 class SceneGen_OT_initbbox(bpy.types.Operator):
@@ -12,6 +13,10 @@ class SceneGen_OT_initbbox(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+
+        # add bbox and generated objects collection
+        object_collection = create_collection("generated_objects")
+        bbox_collection = create_collection("layout_bbox")
         # first, remove all objects
         for obj in bpy.data.objects:
             bpy.data.objects.remove(obj)
@@ -28,9 +33,7 @@ class SceneGen_OT_addobject(bpy.types.Operator):
     def execute(self, context):
         scene_layout = Layout.export()
         new_object_name = context.scene.addobj_name
-        newobject_dict = {
-            new_object_name: ask_newobject(new_object_name, f"{scene_layout}")
-        }
+        newobject_dict = ask_newobject(new_object_name, f"{scene_layout}")
 
         Layout.add_object(newobject_dict)
         return {"FINISHED"}

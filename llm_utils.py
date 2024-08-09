@@ -1,6 +1,7 @@
 from typing import Any
 import os
 from .example_prompts import *
+from typing import Literal
 
 
 class LLMBase(object):
@@ -25,14 +26,18 @@ class ChatGpt(LLMBase):
         )
 
     def __call__(self, prompt: str) -> Any:
+        message = [{
+            "role": "user",
+            "content": [{"type": "text", "text": prompt}],
+        }]
         completion = self.client.chat.completions.create(
             model="gpt-4o",
-            messages=prompt,
+            messages=message,
             response_format={"type": "json_object"},
             # max_tokens=4096,
             # temperature=0
         )
-        info_dict = completion.choices[0].message.to_dict()
+        info_dict = eval(completion.choices[0].message.content)
         return info_dict
 
 
@@ -59,7 +64,7 @@ class OllamaLLm(LLMBase):
         return info_dict
 
 
-def call_llm(prompt, llm_model="ollama"):
+def call_llm(prompt, llm_model: Literal["chatgpt", "ollama"] = "ollama"):
     if llm_model == "chatgpt":
         llm = ChatGpt()
     elif llm_model == "ollama":
@@ -69,7 +74,7 @@ def call_llm(prompt, llm_model="ollama"):
 
 def ask_newobject(object_name, scene_info: str = ""):
     prompt = add_object_prompt(object_name, scene_info)
-    return call_llm(prompt)
+    return call_llm(prompt, llm_model="chatgpt")
 
 
 def ask_nextobject(scene_info):
