@@ -1,4 +1,9 @@
 import bpy
+import math
+
+degrees2radians = lambda rotation_degrees: tuple(
+    math.radians(angle) for angle in rotation_degrees
+)
 
 
 def create_collection(collection_name):
@@ -8,3 +13,6 @@ def create_collection(collection_name):
         return new_collection
     else:
         return bpy.data.collections[collection_name]
+
+
+#

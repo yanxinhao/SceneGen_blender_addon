@@ -21,22 +21,6 @@ class ClayAPI(object):
         )
         self.remote = conn.root
 
-    def _infer(self, prompt, image=None, bbox=None):
-        conditions = []
-        condition_scales = []
-        if image is not None:
-            conditions.append(image)
-            condition_scales.append(0.2)
-        if bbox is not None:
-            conditions.append(["bbox", bbox, True])
-            condition_scales.append(1)
-        _, glb = self.remote.inference(
-            conditions=conditions, condition_scales=condition_scales, prompt=prompt
-        )
-        glb_io = io.BytesIO(glb)
-        mesh = trimesh.load(glb_io, file_type="glb", force="mesh")
-        return mesh
-
     def _infer_one(self, prompt, bbox):
         _, glb = self.remote.inference(
             conditions=[
@@ -55,11 +39,11 @@ class ClayAPI(object):
         return mesh
 
     def generate_by_text_bbox(self, prompts, boxes):
-        tr_meshes = []
+        meshes = []
         for prompt, bbox in zip(prompts, boxes):
-            bbox /= bbox.max()
-            tr_meshes.append(self._infer_one(prompt, bbox))
-        return tr_meshes
+            bbox = [x / max(bbox) for x in bbox]
+            meshes.append(self._infer_one(prompt, bbox))
+        return meshes
 
 
 def get_generator(generator: str, config=None) -> ObjectGeneratorBase:

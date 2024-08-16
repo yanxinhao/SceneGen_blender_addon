@@ -1,10 +1,16 @@
 import json
+import os
 import bpy
-
+import tempfile
 from bpy_extras.io_utils import ImportHelper
 from .scene import Layout
 from .llm_utils import ask_newobject, ask_nextobject
-from .utils import create_collection
+from .utils import create_collection, degrees2radians
+from .object_generator import get_generator, ClayAPI
+from bpy_extras.object_utils import AddObjectHelper, object_data_add
+import numpy as np
+import math
+import trimesh
 
 
 class SceneGen_OT_initbbox(bpy.types.Operator):
@@ -13,14 +19,98 @@ class SceneGen_OT_initbbox(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-
-        # add bbox and generated objects collection
         object_collection = create_collection("generated_objects")
         bbox_collection = create_collection("layout_bbox")
         # first, remove all objects
         for obj in bpy.data.objects:
             bpy.data.objects.remove(obj)
         Layout(context.scene.layout).init_bbox()
+        return {"FINISHED"}
+
+
+# generate objects
+class SceneGen_OT_genobj(bpy.types.Operator, AddObjectHelper):
+    bl_idname = "scenegen.genobj"
+    bl_label = "GenObj"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        # get the current chosen obj description
+        obj_name = context.object.name
+        obj_desc = context.object.description
+        bbox = [
+            context.object.dimensions[0],
+            context.object.dimensions[2],
+            context.object.dimensions[1],
+        ]
+        location = context.object.location
+        angles = context.object.rotation_euler.z
+        generator: ClayAPI = get_generator("ClayAPI")
+        tri_mesh = generator.generate_by_text_bbox([obj_desc], [bbox])[0]
+
+        mesh = bpy.data.meshes.new(name=obj_name)
+        mesh.from_pydata(np.array(tri_mesh.vertices), [], np.array(tri_mesh.faces))
+
+        gen_objname = "gen_" + obj_name
+        if gen_objname in bpy.data.objects:
+            gen_obj = bpy.data.objects[gen_objname]
+        else:
+            gen_obj = object_data_add(context, mesh, operator=self, name=gen_objname)
+            bpy.data.collections["generated_objects"].objects.link(gen_obj)
+            # bpy.data.collections["Collection"].objects.link(gen_obj)
+            # remove from deault scene collection
+            default_collection = bpy.data.collections["Collection"]
+            default_collection.objects.unlink(gen_obj)
+        gen_obj.dimensions = bbox
+        gen_obj.location = location
+        gen_obj.rotation_euler = [math.radians(90), 0, angles]
+        return {"FINISHED"}
+
+
+# update objects of generated meshes
+class SceneGen_OT_updateobjs(bpy.types.Operator, AddObjectHelper):
+    bl_idname = "scenegen.updateobjs"
+    bl_label = "UpdateObjs"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        object_dir = os.path.join(context.scene.json_path, "../objects")
+        for obj_bbox in bpy.data.collections["layout_bbox"].objects:
+            obj_name = obj_bbox.name
+            obj_desc = obj_bbox.description
+            bbox = [
+                obj_bbox.dimensions[0],
+                obj_bbox.dimensions[2],
+                obj_bbox.dimensions[1],
+            ]
+            location = obj_bbox.location
+            angles = obj_bbox.rotation_euler.z
+            # import object by path
+            obj_path = os.path.join(object_dir, f"{obj_name}.obj")
+            if obj_name in bpy.data.meshes:
+                mesh = bpy.data.meshes[obj_name]
+            else:
+                tri_mesh = trimesh.load(obj_path)
+                mesh = bpy.data.meshes.new(name=obj_name)
+                mesh.from_pydata(
+                    np.array(tri_mesh.vertices), [], np.array(tri_mesh.faces)
+                )
+            gen_objname = "gen_" + obj_name
+            if gen_objname in bpy.data.objects:
+                gen_obj = bpy.data.objects[gen_objname]
+            else:
+                gen_obj = object_data_add(
+                    context, mesh, operator=self, name=gen_objname
+                )
+                bpy.data.collections["generated_objects"].objects.link(gen_obj)
+                # bpy.data.collections["Collection"].objects.link(gen_obj)
+                # remove from deault scene collection
+                default_collection = bpy.data.collections["Collection"]
+                default_collection.objects.unlink(gen_obj)
+            gen_obj.dimensions = bbox
+            gen_obj.description = obj_desc
+            gen_obj.location = location
+            gen_obj.rotation_euler = [math.radians(90), 0, angles]
         return {"FINISHED"}
 
 

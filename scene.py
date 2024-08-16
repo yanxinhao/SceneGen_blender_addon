@@ -1,10 +1,6 @@
 import bpy
 import numpy as np
-import math
-
-degrees2radians = lambda rotation_degrees: tuple(
-    math.radians(angle) for angle in rotation_degrees
-)
+from .utils import degrees2radians
 
 
 class Layout(object):
@@ -55,15 +51,22 @@ class Layout(object):
         # change description
         cube["description"] = prompt
 
+        return cube
+
     def init_bbox(self, y_vertical=True):
         # front face color
+        default_collection = bpy.data.collections["Collection"]
         if "RedMaterial" in list(bpy.data.materials.keys()):
             red_material = bpy.data.materials["RedMaterial"]
         else:
             red_material = bpy.data.materials.new(name="RedMaterial")
             red_material.diffuse_color = (1, 0, 0, 1)  # 设置为红色 (RGBA)
         for obj_name, obj in self.objects.items():
-            self.__class__.add_object({obj_name: obj}, y_vertical)
+            cube = self.__class__.add_object({obj_name: obj}, y_vertical)
+            bpy.data.collections["layout_bbox"].objects.link(cube)
+            # bpy.data.collections["Collection"].objects.link(cube)
+            default_collection.objects.unlink(cube)
+
         # add plane
         bpy.ops.mesh.primitive_plane_add(size=1, location=[0, 0, 0])
         plane = bpy.context.selected_objects[0]
@@ -71,6 +74,7 @@ class Layout(object):
         plane.dimensions = [50, 50, 0]
         # move plane to generated objects collection
         bpy.data.collections["generated_objects"].objects.link(plane)
+        default_collection.objects.unlink(plane)
 
     @classmethod
     def export(cls, y_vertical=True) -> dict:

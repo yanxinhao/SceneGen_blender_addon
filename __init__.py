@@ -17,6 +17,8 @@ from .operators import (
     SceneGen_OT_initbbox,
     SceneGen_OT_exportjson,
     SceneGen_OT_addobject,
+    SceneGen_OT_genobj,
+    SceneGen_OT_updateobjs,
 )
 
 bl_info = {
@@ -70,7 +72,13 @@ class SceneGenPanel(bpy.types.Panel):
         row.prop(context.scene, "addobj_name")
         row.operator("scenegen.addobject", text="Add Object")
 
-        layout.operator("scenegen.addcube", text="Generate cube")
+        layout.label(text="Update generated objects")
+        layout.operator("scenegen.updateobjs", text="UpdateObjects")
+        layout.label(text="Generate object or cube :")
+        row = layout.row()
+        row.operator("scenegen.addcube", text="Generate cube")
+        row.operator("scenegen.genobj", text="Generate object")
+        layout.label(text="Export final layout :")
         layout.operator("scenegen.exportjson", text="Export JSON")
 
 
@@ -82,6 +90,8 @@ classes = [
     SceneGen_OT_exportjson,
     SceneGen_OT_initbbox,
     SceneGen_OT_addobject,
+    SceneGen_OT_genobj,
+    SceneGen_OT_updateobjs,
 ]
 
 
