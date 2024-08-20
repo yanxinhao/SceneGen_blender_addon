@@ -1,4 +1,5 @@
 import json
+import os
 
 max_objs = 20
 single_object_template = (
@@ -34,7 +35,7 @@ image2layout_prompt = (
     f" The output number of objects in each scene should not be more than {max_objs},"
     " which means mainly consider the objects with larger sizes. The output example"
     " json is like this. Please strictly follow the format :"
-    f" {json.load(open('./example.json','r'))}"
+    f" {json.load(open(os.path.join(os.path.dirname(__file__),'example.json'),'r'))}"
 )
 
 add_object_prompt = lambda object_name, scene_info: (

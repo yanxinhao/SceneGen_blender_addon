@@ -16,7 +16,7 @@ class ChatGpt(LLMBase):
         import httpx
         from dotenv import load_dotenv
 
-        load_dotenv(".llm_config")
+        load_dotenv(os.path.join(os.path.dirname(__file__), ".llm_config"))
         api_key = os.environ.get("OPENAI_API_KEY")
         http_proxy = os.environ.get("http_proxy")
         proxies = {"http": f"{http_proxy}", "https": f"{http_proxy}"}
@@ -26,10 +26,12 @@ class ChatGpt(LLMBase):
         )
 
     def __call__(self, prompt: str) -> Any:
-        message = [{
-            "role": "user",
-            "content": [{"type": "text", "text": prompt}],
-        }]
+        message = [
+            {
+                "role": "user",
+                "content": [{"type": "text", "text": prompt}],
+            }
+        ]
         completion = self.client.chat.completions.create(
             model="gpt-4o",
             messages=message,
