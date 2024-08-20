@@ -113,6 +113,22 @@ class SceneGen_OT_updateobjs(bpy.types.Operator, AddObjectHelper):
             gen_obj.rotation_euler = [math.radians(90), 0, angles]
         return {"FINISHED"}
 
+# update layout bboxes
+class SceneGen_OT_updatebbox(bpy.types.Operator):
+    bl_idname = "scenegen.updatebbox"
+    bl_label = "UpdateBBox"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        
+        for obj_bbox in bpy.data.collections["layout_bbox"].objects:
+            obj_name = obj_bbox.name
+            gen_object = bpy.data.objects[f"gen_{obj_name}"]
+            obj_bbox.dimensions = gen_object.dimensions
+            obj_bbox.location = gen_object.location
+            obj_bbox.rotation_euler = gen_object.rotation_euler
+
+        return {"FINISHED"}
 
 # add object by asking LLM
 class SceneGen_OT_addobject(bpy.types.Operator):
