@@ -80,11 +80,7 @@ class SceneGen_OT_updateobjs(bpy.types.Operator, AddObjectHelper):
         for obj_bbox in bpy.data.collections["layout_bbox"].objects:
             obj_name = obj_bbox.name
             obj_desc = obj_bbox.description
-            bbox = [
-                obj_bbox.dimensions[0],
-                obj_bbox.dimensions[2],
-                obj_bbox.dimensions[1],
-            ]
+            bbox = obj_bbox.dimensions
             location = obj_bbox.location
             angles = obj_bbox.rotation_euler.z
             # import object by path
@@ -93,6 +89,10 @@ class SceneGen_OT_updateobjs(bpy.types.Operator, AddObjectHelper):
                 mesh = bpy.data.meshes[obj_name]
             else:
                 tri_mesh = trimesh.load(obj_path)
+                # rotate mesh for 90 degrees along x
+                tri_mesh.apply_transform(
+                    np.array([[1, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
+                )
                 mesh = bpy.data.meshes.new(name=obj_name)
                 mesh.from_pydata(
                     np.array(tri_mesh.vertices), [], np.array(tri_mesh.faces)
@@ -112,7 +112,7 @@ class SceneGen_OT_updateobjs(bpy.types.Operator, AddObjectHelper):
             gen_obj.dimensions = bbox
             gen_obj.description = obj_desc
             gen_obj.location = location
-            gen_obj.rotation_euler = [math.radians(90), 0, angles]
+            gen_obj.rotation_euler = [0, 0, angles]
         return {"FINISHED"}
 
 
